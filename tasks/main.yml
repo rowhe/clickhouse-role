@@ -1,0 +1,28 @@
+---
+- name: Install clickhouse-common
+  become: true
+  ansible.builtin.apt:
+    deb: https://packages.clickhouse.com/deb/pool/lts/clickhouse-common-static_{{ clickhouse_version }}_amd64.deb
+- name: Install clickhouse-client
+  become: true
+  ansible.builtin.apt:
+    deb: https://packages.clickhouse.com/deb/pool/lts/clickhouse-client_{{ clickhouse_version }}_all.deb
+- name: Install clickhouse-server
+  become: true
+  ansible.builtin.apt:
+    deb: https://packages.clickhouse.com/deb/pool/lts/clickhouse-server_{{ clickhouse_version }}_all.deb
+- name: Copying clickhouse config file
+  ansible.builtin.copy:
+    src: templates/config.xml.j2
+    dest: /etc/clickhouse-server/config.xml
+    mode: 0644
+- name: Starting clickhouse server
+  ansible.builtin.service:
+    name: clickhouse-server
+    pattern: clickhouse-server
+    state: started
+- name: Create database
+  ansible.builtin.command: "clickhouse-client -q 'create database logs;'"
+  register: create_db
+  failed_when: create_db.rc != 0 and create_db.rc !=82
+  changed_when: create_db.rc == 0
